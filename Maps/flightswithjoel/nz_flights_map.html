@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NZ Figure-8 — VFR Flight Route Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0d1117; color: #e6edf3; height: 100vh; display: flex; flex-direction: column; }
+  #header { background: linear-gradient(135deg, #1a2332 0%, #0d1117 100%); border-bottom: 1px solid #30363d; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  #header h1 { font-size: 1.2rem; font-weight: 700; color: #58a6ff; letter-spacing: 0.5px; }
+  #header .subtitle { font-size: 0.78rem; color: #8b949e; margin-top: 2px; }
+  #stats { display: flex; gap: 20px; align-items: center; }
+  .stat { text-align: center; }
+  .stat-val { font-size: 1.3rem; font-weight: 700; color: #58a6ff; }
+  .stat-lbl { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; }
+  #map-controls { position: absolute; top: 10px; right: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; }
+  .map-btn { background: rgba(13,17,23,0.92); border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; padding: 7px 12px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; font-family: 'Segoe UI', Arial, sans-serif; }
+  .map-btn:hover { background: #1f2937; border-color: #58a6ff; }
+  .map-btn.active { background: #1c2d3f; border-color: #58a6ff; color: #58a6ff; }
+  #main { display: flex; flex: 1; min-height: 0; position: relative; }
+  #sidebar { width: 280px; min-width: 220px; background: #161b22; border-right: 1px solid #30363d; overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
+  #sidebar h2 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #8b949e; padding: 12px 14px 6px; border-bottom: 1px solid #21262d; flex-shrink: 0; }
+  #leg-list { flex: 1; overflow-y: auto; }
+  .leg-item { padding: 9px 14px; border-bottom: 1px solid #21262d; cursor: pointer; transition: background 0.15s; display: flex; align-items: flex-start; gap: 10px; }
+  .leg-item:hover { background: #1f2937; }
+  .leg-item.active { background: #1c2d3f; border-left: 3px solid var(--leg-color); }
+  .leg-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--leg-color); margin-top: 3px; flex-shrink: 0; }
+  .leg-info { flex: 1; min-width: 0; }
+  .leg-part { font-size: 0.62rem; color: #8b949e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .leg-route { font-size: 0.82rem; font-weight: 600; color: #e6edf3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .leg-meta { font-size: 0.7rem; color: #8b949e; margin-top: 2px; }
+  #map { flex: 1; }
+  #elev-panel { position: absolute; bottom: 0; left: 280px; right: 0; z-index: 900; background: rgba(13,17,23,0.96); border-top: 1px solid #30363d; height: 180px; display: none; flex-direction: column; padding: 10px 16px 8px; }
+  #elev-panel.visible { display: flex; }
+  #elev-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  #elev-title { font-size: 0.75rem; font-weight: 600; color: #58a6ff; }
+  #elev-status { font-size: 0.68rem; color: #8b949e; }
+  #elev-close { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 4px; }
+  #elev-close:hover { color: #e6edf3; }
+  #elev-chart-wrap { flex: 1; position: relative; }
+  .flight-tooltip { background: rgba(13,17,23,0.95) !important; border: 1px solid #30363d !important; border-radius: 8px !important; padding: 0 !important; box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important; color: #e6edf3 !important; font-family: 'Segoe UI', Arial, sans-serif !important; min-width: 220px; }
+  .flight-tooltip::before { display: none !important; }
+  .tt-header { padding: 10px 14px 8px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.85rem; border-bottom: 1px solid #30363d; }
+  .tt-body { padding: 8px 14px 10px; }
+  .tt-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px; font-size: 0.77rem; }
+  .tt-label { color: #8b949e; }
+  .tt-value { color: #e6edf3; font-weight: 600; text-align: right; }
+  .tt-file { font-size: 0.65rem; color: #6e7681; margin-top: 6px; word-break: break-all; }
+  #legend { position: absolute; bottom: 20px; left: 10px; z-index: 1000; background: rgba(13,17,23,0.92); border: 1px solid #30363d; border-radius: 8px; padding: 10px 14px; font-size: 0.7rem; max-width: 210px; }
+  #legend h3 { color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-size: 0.65rem; }
+  .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; color: #e6edf3; }
+  .legend-dot-dep { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; border: 2px solid #fff; flex-shrink:0; }
+  .legend-dot-arr { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; border: 2px solid #fff; flex-shrink:0; }
+  .legend-dot-wp  { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.6); flex-shrink:0; }
+</style>
+</head>
+<body>
+<div id="header">
+  <div>
+    <h1>✈ NZ Figure-8 — VFR Tour of New Zealand</h1>
+    <div class="subtitle">12 flight plans · Figure-8 route · Little Navmap</div>
+  </div>
+  <div id="stats">
+    <div class="stat"><div class="stat-val" id="stat-legs">12</div><div class="stat-lbl">Legs</div></div>
+    <div class="stat"><div class="stat-val" id="stat-dist">—</div><div class="stat-lbl">Total NM</div></div>
+    <div class="stat"><div class="stat-val" id="stat-days">—</div><div class="stat-lbl">Days Span</div></div>
+    <div class="stat"><div class="stat-val" id="stat-avg">—</div><div class="stat-lbl">Avg Leg (NM)</div></div>
+  </div>
+</div>
+<div id="main">
+  <div id="sidebar"><h2>Flight Legs</h2><div id="leg-list"></div></div>
+  <div id="map"></div>
+  <div id="map-controls">
+    <button class="map-btn active" id="btn-dark"      onclick="setLayer('dark')">🌙 Dark</button>
+    <button class="map-btn"        id="btn-satellite" onclick="setLayer('satellite')">🛰 Satellite</button>
+    <button class="map-btn"        id="btn-topo"      onclick="setLayer('topo')">🗺 Topo</button>
+  </div>
+  <div id="elev-panel">
+    <div id="elev-header">
+      <div id="elev-title">Elevation Profile</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="elev-status">Click a leg to load</div>
+        <button id="elev-close" onclick="closeElev()">✕</button>
+      </div>
+    </div>
+    <div id="elev-chart-wrap"><canvas id="elev-chart"></canvas></div>
+  </div>
+</div>
+<script>
+const PLANS = [{"part":1,"filename":"NZ 8 Part 01 VFR Wellington Intl (NZWN) to Wairoa (NZWO).pln","departure":"NZWN","destination":"NZWO","departure_name":"Wellington Intl (NZWN)","destination_name":"Wairoa (NZWO)","date":"2026-08-16","time":"12:00","waypoints":[[-41.326839,174.806862],[-41.243217,175.96025],[-40.895836,176.230117],[-40.278903,176.650908],[-39.646667,176.766936],[-39.011862,177.404401]],"distance_miles":235.6,"distance_nm":204.8},{"part":2,"filename":"NZ 8 Part 02 VFR Wairoa (NZWO) to Whakatane (NZWK).pln","departure":"NZWO","destination":"NZWK","departure_name":"Wairoa (NZWO)","destination_name":"Whakatane (NZWK)","date":"2026-08-23","time":"12:00","waypoints":[[-39.011862,177.404401],[-39.260536,177.866014],[-38.663333,177.978333],[-38.054817,178.304428],[-37.8834,178.291092],[-37.688992,178.548186],[-37.629228,178.348131],[-37.646044,178.37625],[-37.684097,178.342269],[-37.6936,178.2863],[-37.753344,178.125625],[-37.6936,178.045639],[-37.732711,177.977997],[-37.698489,177.929931],[-37.680831,177.874664],[-37.661536,177.8647],[-38.023017,177.305711],[-37.922224,176.91696]],"distance_miles":258.9,"distance_nm":225.0},{"part":3,"filename":"NZ 8 Part 03 VFR Whakatane (NZWK) to Great Mercury Airport (NZGR).pln","departure":"NZWK","destination":"NZGR","departure_name":"Whakatane (NZWK)","destination_name":"Great Mercury Airport (NZGR)","date":"2026-08-25","time":"12:00","waypoints":[[-37.922224,176.91696],[-38.220797,176.509706],[-38.109161,176.317214],[-38.064647,176.360794],[-37.890033,176.3649],[-37.822125,176.412156],[-37.633297,176.412811],[-37.671947,176.196106],[-37.592492,176.077836],[-37.430203,175.952164],[-37.383153,175.674347],[-37.156669,175.550278],[-37.156486,175.594575],[-37.109131,175.635772],[-37.049422,175.679717],[-37.032433,175.703064],[-36.831661,175.678603],[-36.593635,175.764598]],"distance_miles":188.1,"distance_nm":163.4},{"part":4,"filename":"NZ 8 Part 04 VFR Great Mercury Airport (NZGR) to Kaitaia (NZKT).pln","departure":"NZGR","destination":"NZKT","departure_name":"Great Mercury Airport (NZGR)","destination_name":"Kaitaia (NZKT)","date":"2026-08-26","time":"12:00","waypoints":[[-36.593635,175.764598],[-36.241389,175.471939],[-36.606589,174.904175],[-35.768333,174.365006],[-35.165794,174.336717],[-35.262781,173.911942],[-34.422356,172.678344],[-35.069837,173.287053]],"distance_miles":348.9,"distance_nm":303.2},{"part":5,"filename":"NZ 8 Part 05 VFR Kaitaia (NZKT) to Limestone Downs Airport (NZLD).pln","departure":"NZKT","destination":"NZLD","departure_name":"Kaitaia (NZKT)","destination_name":"Limestone Downs Airport (NZLD)","date":"2026-08-29","time":"12:00","waypoints":[[-35.069837,173.287053],[-36.09715,173.977844],[-36.574314,174.370408],[-36.830886,174.746033],[-36.848311,174.762239],[-36.860644,174.778061],[-37.48,174.744995]],"distance_miles":193.3,"distance_nm":168.0},{"part":6,"filename":"NZ 8 Part 06 VFR Limestone Downs Airport (NZLD) to Stratford (NZSD).pln","departure":"NZLD","destination":"NZSD","departure_name":"Limestone Downs Airport (NZLD)","destination_name":"Stratford (NZSD)","date":"2026-09-06","time":"12:00","waypoints":[[-37.48,174.744995],[-37.442219,174.770217],[-38.182561,174.708419],[-38.694072,174.638947],[-39.182347,174.378861],[-39.2056,174.22235],[-39.271594,173.757447],[-39.318901,174.309998]],"distance_miles":189.8,"distance_nm":165.0},{"part":7,"filename":"NZ 8 Part 07 VFR Stratford (NZSD) to Kaitoke (NSTYY).pln","departure":"NZSD","destination":"NSTYY","departure_name":"Stratford (NZSD)","destination_name":"Kaitoke (NSTYY)","date":"2026-09-10","time":"12:00","waypoints":[[-39.318901,174.309998],[-39.936431,175.061981],[-39.962222,175.025283],[-40.320556,175.616944],[-40.355611,175.611861],[-41.084172,174.844636],[-41.084172,174.844636]],"distance_miles":167.8,"distance_nm":145.9},{"part":8,"filename":"NZ 8 Part 08 VFR Kaitoke (NSTYY) to Christchurch Intl (NZCH).pln","departure":"NSTYY","destination":"NZCH","departure_name":"Kaitoke (NSTYY)","destination_name":"Christchurch Intl (NZCH)","date":"2026-09-12","time":"12:00","waypoints":[[-41.084172,174.844636],[-41.232617,174.780442],[-41.327222,174.805283],[-41.744094,174.273117],[-42.425,173.605269],[-43.489029,172.532065]],"distance_miles":206.9,"distance_nm":179.8},{"part":9,"filename":"NZ 8 Part 09 VFR Christchurch Intl (NZCH) to Oamaru (NZOU).pln","departure":"NZCH","destination":"NZOU","departure_name":"Christchurch Intl (NZCH)","destination_name":"Oamaru (NZOU)","date":"2026-09-14","time":"12:00","waypoints":[[-43.489029,172.532065],[-43.532933,172.623886],[-43.603786,172.652681],[-43.802417,172.97075],[-43.738889,172.041808],[-44.302775,171.225281],[-44.970001,171.082001]],"distance_miles":181.0,"distance_nm":157.3},{"part":10,"filename":"NZ 8 Part 10 VFR Oamaru (NZOU) to Invercargill (NZNV).pln","departure":"NZOU","destination":"NZNV","departure_name":"Oamaru (NZOU)","destination_name":"Invercargill (NZNV)","date":"2026-09-17","time":"12:00","waypoints":[[-44.970001,171.082001],[-45.356933,170.856003],[-45.771839,170.726653],[-45.863353,170.628997],[-45.8484,170.530778],[-45.869369,170.524764],[-45.876178,170.507094],[-45.868886,170.509689],[-45.86,170.358336],[-46.243331,169.75],[-46.653072,168.417161],[-46.412399,168.313004]],"distance_miles":207.5,"distance_nm":180.3},{"part":11,"filename":"NZ 8 Part 11 VFR Invercargill (NZNV) to Martins Bay Aerodrome (NZMJ).pln","departure":"NZNV","destination":"NZMJ","departure_name":"Invercargill (NZNV)","destination_name":"Martins Bay Aerodrome (NZMJ)","date":"2026-09-20","time":"12:00","waypoints":[[-46.412399,168.313004],[-45.668972,168.423033],[-45.380328,168.680528],[-45.021111,168.739167],[-45.075808,168.46785],[-44.743769,168.327239],[-44.723064,168.220322],[-44.652006,168.194778],[-44.365971,168.016255]],"distance_miles":170.0,"distance_nm":147.7},{"part":12,"filename":"NZ 8 Part 12 VFR Martins Bay Aerodrome (NZMJ) to Greymouth (NZGM).pln","departure":"NZMJ","destination":"NZGM","departure_name":"Martins Bay Aerodrome (NZMJ)","destination_name":"Greymouth (NZGM)","date":"2026-09-24","time":"12:00","waypoints":[[-44.365971,168.016255],[-44.18465,168.192367],[-43.865475,169.041244],[-43.461269,170.017425],[-43.221175,170.16385],[-42.564522,171.151017],[-42.4617,171.190002]],"distance_miles":212.1,"distance_nm":184.3}];
+const COLORS = [
+  '#FF6B6B','#FF9F43','#FECA57','#48C774','#00D1B2','#3498DB','#9B59B6','#E91E63',
+  '#00BCD4','#8BC34A','#FF7043','#26A69A','#7E57C2','#EC407A','#42A5F5','#66BB6A',
+  '#FFA726','#AB47BC','#26C6DA','#EF5350','#29B6F6','#D4E157','#FF80AB','#A5D6A7',
+  '#FFCC02','#80DEEA','#CE93D8','#FFAB91','#80CBC4','#FFD54F'
+];
+PLANS.sort((a,b)=>a.part-b.part);
+let totalNM=0; PLANS.forEach(p=>totalNM+=p.distance_nm);
+const firstDate=new Date(PLANS[0].date), lastDate=new Date(PLANS[PLANS.length-1].date);
+const daySpan=Math.round((lastDate-firstDate)/86400000)+1;
+document.getElementById('stat-dist').textContent=totalNM.toLocaleString('en',{maximumFractionDigits:0});
+document.getElementById('stat-days').textContent=daySpan;
+document.getElementById('stat-avg').textContent=Math.round(totalNM/PLANS.length);
+document.getElementById('stat-legs').textContent=PLANS.length;
+const map=L.map('map',{center:[-41,172],zoom:6,preferCanvas:true});
+const layers={
+  dark:      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19}),
+  topo:      L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'© OpenTopoMap',subdomains:'abc',maxZoom:17})
+};
+layers.dark.addTo(map);
+let currentLayer='dark';
+function setLayer(name){
+  if(currentLayer===name) return;
+  map.removeLayer(layers[currentLayer]); layers[name].addTo(map); currentLayer=name;
+  document.querySelectorAll('.map-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+name).classList.add('active');
+}
+let elevChart=null, elevCache={};
+function closeElev(){ document.getElementById('elev-panel').classList.remove('visible'); }
+async function loadElevation(plan,color){
+  const panel=document.getElementById('elev-panel'), status=document.getElementById('elev-status'), title=document.getElementById('elev-title');
+  panel.classList.add('visible');
+  title.textContent=`Elevation Profile — Leg ${String(plan.part).padStart(2,'0')}: ${shortName(plan.departure_name)} → ${shortName(plan.destination_name)}`;
+  status.textContent='Loading…';
+  const wps=plan.waypoints, step=Math.max(1,Math.floor(wps.length/40)), sampled=[];
+  for(let i=0;i<wps.length;i+=step) sampled.push(wps[i]);
+  if(sampled[sampled.length-1]!==wps[wps.length-1]) sampled.push(wps[wps.length-1]);
+  let elevData;
+  if(elevCache[plan.part]){ elevData=elevCache[plan.part]; status.textContent=`${sampled.length} samples`; }
+  else {
+    try {
+      const resp=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${sampled.map(p=>p[0]).join(',')}&longitude=${sampled.map(p=>p[1]).join(',')}`);
+      const json=await resp.json(); elevData=json.elevation||[];
+      elevCache[plan.part]=elevData; status.textContent=`${elevData.length} samples`;
+    } catch(e){ status.textContent='Elevation data unavailable'; elevData=sampled.map(()=>0); }
+  }
+  function hav(a,b,c,d){const R=3440.065,t=Math.PI/180,e=(c-a)*t,f=(d-b)*t,g=Math.sin(e/2)**2+Math.cos(a*t)*Math.cos(c*t)*Math.sin(f/2)**2;return R*2*Math.atan2(Math.sqrt(g),Math.sqrt(1-g));}
+  let cum=0;
+  const labels=sampled.map((wp,i)=>{if(i>0)cum+=hav(sampled[i-1][0],sampled[i-1][1],wp[0],wp[1]);return cum.toFixed(1);});
+  if(elevChart) elevChart.destroy();
+  elevChart=new Chart(document.getElementById('elev-chart').getContext('2d'),{
+    type:'line',
+    data:{labels,datasets:[{data:elevData.map(e=>Math.round(e*3.28084)),borderColor:color,backgroundColor:color+'33',borderWidth:2,pointRadius:0,fill:true,tension:0.3}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},
+      plugins:{legend:{display:false},tooltip:{callbacks:{title:c=>`${c[0].label} NM`,label:c=>`${c.parsed.y.toLocaleString()} ft`},backgroundColor:'rgba(13,17,23,0.95)',borderColor:'#30363d',borderWidth:1,titleColor:'#8b949e',bodyColor:'#e6edf3'}},
+      scales:{x:{title:{display:true,text:'Distance (NM)',color:'#8b949e',font:{size:10}},ticks:{color:'#8b949e',font:{size:9},maxTicksLimit:10},grid:{color:'#21262d'}},
+              y:{title:{display:true,text:'Elevation (ft)',color:'#8b949e',font:{size:10}},ticks:{color:'#8b949e',font:{size:9},callback:v=>v.toLocaleString()},grid:{color:'#21262d'},min:0}}}
+  });
+}
+const legList=document.getElementById('leg-list');
+let activeLeg=null;
+function shortName(n){return n.replace(/\s*\([A-Z0-9]{3,5}\)\s*$/,'').trim();}
+function buildTooltip(plan,color){
+  return `<div class="tt-header" style="background:linear-gradient(135deg,${color}22,${color}11)"><span style="color:${color}">LEG ${String(plan.part).padStart(2,'0')}</span> &nbsp;·&nbsp; ${shortName(plan.departure_name)} → ${shortName(plan.destination_name)}</div>
+  <div class="tt-body">
+    <div class="tt-row"><span class="tt-label">Date</span><span class="tt-value">${plan.date}</span></div>
+    <div class="tt-row"><span class="tt-label">Departure</span><span class="tt-value">${plan.departure_name}</span></div>
+    <div class="tt-row"><span class="tt-label">Arrival</span><span class="tt-value">${plan.destination_name}</span></div>
+    <div class="tt-row"><span class="tt-label">Distance</span><span class="tt-value">${plan.distance_nm>0?plan.distance_nm.toLocaleString()+' NM':'N/A'}</span></div>
+    <div class="tt-row"><span class="tt-label">Waypoints</span><span class="tt-value">${plan.waypoints.length}</span></div>
+    <div class="tt-file">${plan.filename}</div>
+  </div>`;
+}
+function focusLeg(idx){
+  if(activeLeg!==null&&PLANS[activeLeg]._poly) PLANS[activeLeg]._poly.setStyle({weight:3,opacity:0.85});
+  if(activeLeg!==null) PLANS[activeLeg]._sidebarEl.classList.remove('active');
+  activeLeg=idx;
+  const plan=PLANS[idx];
+  if(plan._poly){plan._poly.setStyle({weight:5,opacity:1});plan._poly.bringToFront();map.fitBounds(plan._poly.getBounds().pad(0.2));loadElevation(plan,plan._color);}
+  plan._sidebarEl.classList.add('active');
+  plan._sidebarEl.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+PLANS.forEach((plan,idx)=>{
+  const color=COLORS[idx%COLORS.length]; plan._color=color;
+  const item=document.createElement('div'); item.className='leg-item'; item.style.setProperty('--leg-color',color);
+  item.innerHTML=`<div class="leg-dot"></div><div class="leg-info"><div class="leg-part">Leg ${String(plan.part).padStart(2,'0')}</div><div class="leg-route">${shortName(plan.departure_name)} → ${shortName(plan.destination_name)}</div><div class="leg-meta">${plan.date} &nbsp;·&nbsp; ${plan.distance_nm>0?plan.distance_nm.toLocaleString()+' NM':'direct'}</div></div>`;
+  item.addEventListener('click',()=>focusLeg(idx)); legList.appendChild(item); plan._sidebarEl=item;
+  if(plan.waypoints.length<2) return;
+  const latlngs=plan.waypoints.map(w=>[w[0],w[1]]), ttHtml=buildTooltip(plan,color);
+  const poly=L.polyline(latlngs,{color,weight:3,opacity:0.85,smoothFactor:1.5}).addTo(map);
+  poly.bindTooltip(ttHtml,{sticky:true,className:'flight-tooltip',offset:[15,0],opacity:1});
+  poly.on('mouseover',function(){this.setStyle({weight:5,opacity:1});});
+  poly.on('mouseout', function(){this.setStyle({weight:activeLeg===idx?5:3,opacity:activeLeg===idx?1:0.85});});
+  poly.on('click',()=>focusLeg(idx)); plan._poly=poly;
+  for(let i=1;i<latlngs.length-1;i++) L.circleMarker(latlngs[i],{radius:3,color,fillColor:'#fff',fillOpacity:0.6,weight:1.5}).addTo(map).bindTooltip(ttHtml,{sticky:true,className:'flight-tooltip',opacity:1});
+  L.circleMarker(latlngs[0],{radius:7,color:'#fff',fillColor:'#22c55e',fillOpacity:1,weight:2}).addTo(map).bindTooltip(`<b style="color:#22c55e">DEP</b> ${plan.departure_name}<br><small>${plan.departure}</small>`,{className:'flight-tooltip',sticky:true,opacity:1});
+  L.circleMarker(latlngs[latlngs.length-1],{radius:7,color:'#fff',fillColor:'#ef4444',fillOpacity:1,weight:2}).addTo(map).bindTooltip(`<b style="color:#ef4444">ARR</b> ${plan.destination_name}<br><small>${plan.destination}</small>`,{className:'flight-tooltip',sticky:true,opacity:1});
+  const mid=latlngs[Math.floor(latlngs.length/2)];
+  L.marker(mid,{icon:L.divIcon({html:`<div style="background:${color};color:#000;font-size:9px;font-weight:800;border-radius:10px;padding:1px 5px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.6)">${plan.part}</div>`,className:'',iconAnchor:[10,8]}),interactive:false}).addTo(map);
+});
+const lc=L.control({position:'bottomleft'});
+lc.onAdd=function(){const d=L.DomUtil.create('div','');d.id='legend';d.innerHTML=`<h3>Map Legend</h3><div class="legend-row"><div class="legend-dot-dep"></div> Departure Airport</div><div class="legend-row"><div class="legend-dot-arr"></div> Arrival Airport</div><div class="legend-row"><div class="legend-dot-wp"></div> Waypoint</div><div class="legend-row" style="margin-top:8px"><div style="width:24px;height:3px;border-radius:2px;background:linear-gradient(90deg,#FF6B6B,#3498DB,#22c55e)"></div> Route Lines</div><div class="legend-row" style="margin-top:6px;font-size:0.65rem;color:#8b949e">Click a leg for elevation profile</div>`;return d;};
+lc.addTo(map);
+const allWP=[];PLANS.forEach(p=>p.waypoints.forEach(w=>allWP.push([w[0],w[1]])));
+if(allWP.length) map.fitBounds(allWP.reduce((b,ll)=>[[Math.min(b[0][0],ll[0]),Math.min(b[0][1],ll[1])],[Math.max(b[1][0],ll[0]),Math.max(b[1][1],ll[1])]],[[90,180],[-90,-180]]),{padding:[30,30]});
+</script>
+</body>
+</html>
