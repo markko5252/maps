@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>✌ The Hippy Dippy Trail — London to Bangkok</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background:#1a1a2e; color:#eee; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+  #header { background:linear-gradient(135deg,#2d1b00,#4a2e00); padding:10px 16px; border-bottom:2px solid #f6a623; flex-shrink:0; }
+  #header h1 { font-size:1.25rem; color:#f6a623; letter-spacing:1px; }
+  #header .sub { font-size:0.78rem; color:#ccc; margin-top:2px; }
+  #main { display:flex; flex:1; overflow:hidden; }
+  #map { flex:1; }
+  #sidebar { width:280px; background:#111827; display:flex; flex-direction:column; border-left:1px solid #374151; overflow:hidden; }
+  #leg-list { flex:1; overflow-y:auto; padding:8px; }
+  #leg-list h3 { color:#f6a623; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; padding:4px; }
+  .leg-card { background:#1f2937; border:1px solid #374151; border-radius:6px; padding:8px 10px; margin-bottom:6px; cursor:pointer; transition:all .2s; }
+  .leg-card:hover, .leg-card.active { border-color:#f6a623; background:#2d3748; }
+  .leg-card .leg-num { font-size:0.68rem; color:#f6a623; text-transform:uppercase; letter-spacing:1px; }
+  .leg-card .leg-route { font-size:0.9rem; font-weight:600; color:#f3f4f6; margin:2px 0; }
+  .leg-card .leg-meta { font-size:0.72rem; color:#9ca3af; }
+  #elev-panel { height:160px; background:#0f172a; border-top:1px solid #374151; padding:8px; flex-shrink:0; }
+  #elev-panel h4 { color:#f6a623; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+  #elev-chart-wrap { height:120px; }
+  .leaflet-popup-content-wrapper { background:#1f2937; border:1px solid #f6a623; color:#f3f4f6; }
+  .leaflet-popup-tip { background:#1f2937; }
+  .popup-icao { font-size:1rem; font-weight:700; color:#f6a623; }
+  .popup-detail { font-size:0.8rem; color:#9ca3af; margin-top:2px; }
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>✌ The Hippy Dippy Trail — London to Bangkok</h1>
+  <div class="sub" id="subtitle">Loading...</div>
+</div>
+<div id="main">
+  <div id="map"></div>
+  <div id="sidebar">
+    <div id="leg-list">
+      <h3>Flight Legs</h3>
+      <div id="cards"></div>
+    </div>
+    <div id="elev-panel">
+      <h4 id="elev-title">Elevation Profile</h4>
+      <div id="elev-chart-wrap"><canvas id="elev-chart"></canvas></div>
+    </div>
+  </div>
+</div>
+<script>
+const PLANS = [{"departure": "EGLC", "destination": "EBBR", "waypoints": [{"icao": "EGLC", "lat": 51.505299, "lon": 0.055278, "type": "Airport"}, {"icao": "WP1", "lat": 51.514011, "lon": 0.719892, "type": "User"}, {"icao": "WP2", "lat": 51.426808, "lon": 1.028267, "type": "User"}, {"icao": "EGDH", "lat": 51.176125, "lon": 1.278014, "type": "Airport"}, {"icao": "WP3", "lat": 51.130108, "lon": 1.321564, "type": "User"}, {"icao": "LFAC", "lat": 50.962101, "lon": 1.95476, "type": "Airport"}, {"icao": "EBMO", "lat": 50.851285, "lon": 3.147669, "type": "Airport"}, {"icao": "EBBR", "lat": 50.901402, "lon": 4.48444, "type": "Airport"}], "distance_nm": 180.8, "leg": 1, "date": "2026-10-10", "filename": "Hippy Dippy Part 01 VFR London City (EGLC) to Brussels National (EBBR).pln"}, {"departure": "EBBR", "destination": "LFPB", "waypoints": [{"icao": "EBBR", "lat": 50.901402, "lon": 4.48444, "type": "Airport"}, {"icao": "EBA4V", "lat": 50.841789, "lon": 4.382036, "type": "Airport"}, {"icao": "WP1", "lat": 50.851278, "lon": 4.353125, "type": "User"}, {"icao": "EBBA", "lat": 50.469514, "lon": 3.838767, "type": "Airport"}, {"icao": "LFFJ5", "lat": 50.124153, "lon": 3.425247, "type": "Airport"}, {"icao": "LFE6V", "lat": 49.857156, "lon": 3.263714, "type": "Airport"}, {"icao": "WP2", "lat": 49.354664, "lon": 2.991225, "type": "User"}, {"icao": "LFQEM", "lat": 49.3858, "lon": 2.788394, "type": "Airport"}, {"icao": "LFZFO", "lat": 49.135425, "lon": 2.597322, "type": "Airport"}, {"icao": "LFPB", "lat": 48.962276, "lon": 2.436539, "type": "Airport"}], "distance_nm": 149.1, "leg": 2, "date": "2026-10-12", "filename": "Hippy Trail Part 02 VFR Brussels National (EBBR) to Le Bourget (LFPB).pln"}];
+
+const ACCENT = '#f6a623';
+const LEG_COLORS = [
+  '#f6a623','#e05c2a','#d4a017','#c8813d','#e8b84b',
+  '#f0c060','#cc6633','#e07020','#d4883a','#f0a040'
+];
+
+// Map setup
+const map = L.map('map', {zoomControl:true}).setView([50, 5], 5);
+
+const layers = {
+  'Dark': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    {attribution:'&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19}),
+  'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {attribution:'&copy; Esri', maxZoom:19}),
+  'Topo': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    {attribution:'&copy; OpenTopoMap', maxZoom:17})
+};
+layers['Dark'].addTo(map);
+L.control.layers(layers, {}, {position:'topright'}).addTo(map);
+
+// Legend
+const legend = L.control({position:'bottomleft'});
+legend.onAdd = function() {
+  const d = L.DomUtil.create('div','');
+  d.style.cssText='background:#1f2937;border:1px solid #374151;border-radius:6px;padding:8px 12px;color:#f3f4f6;font-size:0.78rem;min-width:140px;';
+  let html = `<div style="color:#f6a623;font-weight:700;margin-bottom:6px;letter-spacing:1px;font-size:0.72rem">HIPPY TRAIL LEGS</div>`;
+  PLANS.forEach((p,i) => {
+    const c = LEG_COLORS[i % LEG_COLORS.length];
+    html += `<div style="display:flex;align-items:center;gap:6px;margin:3px 0;">
+      <div style="width:20px;height:3px;background:${c};border-radius:2px;"></div>
+      <span style="color:#9ca3af;font-size:0.7rem;">Leg ${p.leg}</span>
+      <span style="color:#f3f4f6;font-size:0.72rem;">${p.departure}→${p.destination}</span>
+    </div>`;
+  });
+  d.innerHTML = html;
+  return d;
+};
+legend.addTo(map);
+
+// Elevation chart
+const elevCtx = document.getElementById('elev-chart').getContext('2d');
+let elevChart = new Chart(elevCtx, {
+  type:'line',
+  data:{labels:[],datasets:[{label:'Elevation (ft)',data:[],borderColor:ACCENT,backgroundColor:'rgba(246,166,35,0.15)',borderWidth:1.5,pointRadius:0,fill:true,tension:0.3}]},
+  options:{responsive:true,maintainAspectRatio:false,
+    scales:{x:{display:false},y:{ticks:{color:'#9ca3af',font:{size:9}},grid:{color:'#1f2937'}}},
+    plugins:{legend:{display:false}}
+  }
+});
+
+let activeIdx = -1;
+const polylines = [];
+const allBounds = [];
+
+function buildCards() {
+  const cards = document.getElementById('cards');
+  let totalNM = 0;
+  PLANS.forEach(p => totalNM += p.distance_nm);
+  const avg = totalNM / PLANS.length;
+  document.getElementById('subtitle').textContent =
+    `${PLANS.length} legs · ${totalNM.toFixed(1)} NM total · ${avg.toFixed(1)} NM avg · Little Navmap`;
+
+  PLANS.forEach((p,i) => {
+    const c = document.createElement('div');
+    c.className = 'leg-card';
+    c.innerHTML = `<div class="leg-num">Leg ${p.leg} · ${p.date || ''}</div>
+      <div class="leg-route">${p.departure} → ${p.destination}</div>
+      <div class="leg-meta">${p.distance_nm} NM · ${p.waypoints.length} waypoints</div>`;
+    c.onclick = () => focusLeg(i);
+    cards.appendChild(c);
+  });
+}
+
+function drawRoutes() {
+  PLANS.forEach((p,i) => {
+    const color = LEG_COLORS[i % LEG_COLORS.length];
+    const latlngs = p.waypoints.map(w => [w.lat, w.lon]);
+    const poly = L.polyline(latlngs, {color, weight:2.5, opacity:0.85}).addTo(map);
+    polylines.push(poly);
+    allBounds.push(...latlngs);
+
+    p.waypoints.forEach((wp, wi) => {
+      const isFirst = wi===0, isLast = wi===p.waypoints.length-1;
+      let markerColor = color;
+      let radius = 5;
+      if (isFirst || isLast) { markerColor = ACCENT; radius = 7; }
+
+      const circle = L.circleMarker([wp.lat, wp.lon], {
+        radius, color:markerColor, fillColor:markerColor, fillOpacity:0.9, weight:2
+      }).addTo(map);
+
+      circle.bindPopup(`<div class="popup-icao">${wp.icao}</div>
+        <div class="popup-detail">Leg ${p.leg}: ${p.departure} → ${p.destination}</div>
+        <div class="popup-detail">${wp.lat.toFixed(4)}, ${wp.lon.toFixed(4)}</div>`);
+    });
+  });
+
+  if (allBounds.length) map.fitBounds(L.latLngBounds(allBounds), {padding:[40,40]});
+}
+
+function focusLeg(idx) {
+  document.querySelectorAll('.leg-card').forEach((c,i) => c.classList.toggle('active', i===idx));
+  activeIdx = idx;
+  const p = PLANS[idx];
+  const latlngs = p.waypoints.map(w => [w.lat, w.lon]);
+  map.fitBounds(L.latLngBounds(latlngs), {padding:[60,60]});
+  loadElevation(p, idx);
+}
+
+async function loadElevation(plan, idx) {
+  const latlngs = plan.waypoints.map(w => [w.lat, w.lon]);
+  const pts = sampleRoute(latlngs, 50);
+  document.getElementById('elev-title').textContent =
+    `Elevation Profile — Leg ${plan.leg}: ${plan.departure} → ${plan.destination}`;
+
+  try {
+    const latStr = pts.map(p=>p[0].toFixed(4)).join(',');
+    const lonStr = pts.map(p=>p[1].toFixed(4)).join(',');
+    const url = `https://api.open-meteo.com/v1/elevation?latitude=${latStr}&longitude=${lonStr}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const elevs = data.elevation.map(e => Math.round(e * 3.28084));
+    const labels = elevs.map((_,i) => i);
+    elevChart.data.labels = labels;
+    elevChart.data.datasets[0].data = elevs;
+    elevChart.data.datasets[0].borderColor = LEG_COLORS[idx % LEG_COLORS.length];
+    elevChart.data.datasets[0].backgroundColor = LEG_COLORS[idx % LEG_COLORS.length].replace(')',',0.15)').replace('rgb','rgba');
+    elevChart.update();
+  } catch(e) {
+    console.warn('Elevation fetch failed', e);
+  }
+}
+
+function sampleRoute(latlngs, n) {
+  if (latlngs.length <= n) return latlngs;
+  const step = (latlngs.length-1) / (n-1);
+  return Array.from({length:n}, (_,i) => latlngs[Math.round(i*step)]);
+}
+
+buildCards();
+drawRoutes();
+focusLeg(0);
+</script>
+</body>
+</html>
