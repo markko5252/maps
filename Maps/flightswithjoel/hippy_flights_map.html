@@ -1,133 +1,224 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>&#9996; The Hippy Dippy Trail &mdash; London to Bangkok</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>✌ The Hippy Dippy Trail — London to Bangkok</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Segoe UI',sans-serif; background:#1a1a2e; color:#eee; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
-#header { background:linear-gradient(135deg,#2d1b00,#4a2e00); padding:10px 16px; border-bottom:2px solid #f6a623; flex-shrink:0; }
-#header h1 { font-size:1.25rem; color:#f6a623; letter-spacing:1px; }
-#header .sub { font-size:0.78rem; color:#ccc; margin-top:2px; }
-#main { display:flex; flex:1; overflow:hidden; }
-#map { flex:1; }
-#sidebar { width:280px; background:#111827; display:flex; flex-direction:column; border-left:1px solid #374151; overflow:hidden; }
-#leg-list { flex:1; overflow-y:auto; padding:8px; }
-#leg-list h3 { color:#f6a623; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; padding:4px; }
-.leg-card { background:#1f2937; border:1px solid #374151; border-radius:6px; padding:8px 10px; margin-bottom:6px; cursor:pointer; transition:all .2s; }
-.leg-card:hover, .leg-card.active { border-color:#f6a623; background:#2d3748; }
-.leg-card .leg-num { font-size:0.68rem; color:#f6a623; text-transform:uppercase; letter-spacing:1px; }
-.leg-card .leg-route { font-size:0.9rem; font-weight:600; color:#f3f4f6; margin:2px 0; }
-.leg-card .leg-meta { font-size:0.72rem; color:#9ca3af; }
-#elev-panel { height:160px; background:#0f172a; border-top:1px solid #374151; padding:8px; flex-shrink:0; }
-#elev-panel h4 { color:#f6a623; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
-#elev-chart-wrap { height:120px; }
-.leaflet-popup-content-wrapper { background:#1f2937; border:1px solid #f6a623; color:#f3f4f6; }
-.leaflet-popup-tip { background:#1f2937; }
-.popup-icao { font-size:1rem; font-weight:700; color:#f6a623; }
-.popup-detail { font-size:0.8rem; color:#9ca3af; margin-top:2px; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0e1116;--panel:#151a22;--panel2:#1b212b;--line:#2a3240;
+    --text:#e6e9ef;--muted:#8b95a7;--accent:#f6a623;
+  }
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+  #wrap{display:flex;height:100vh;overflow:hidden}
+  #sidebar{width:300px;min-width:300px;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line);z-index:1000;transition:transform .25s}
+  #sidebar-head{padding:16px;border-bottom:1px solid var(--line)}
+  h1{font-size:1rem;font-weight:700;margin-bottom:2px}
+  #sidebar-head p{font-size:.75rem;color:var(--muted)}
+  #stats{display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:.72rem}
+  .stat{flex:1;background:var(--panel2);border-radius:6px;padding:6px 8px;text-align:center}
+  .stat strong{display:block;font-size:1rem;font-weight:700;color:var(--text)}
+  .stat span{color:var(--muted)}
+  #search{padding:8px 12px;border-bottom:1px solid var(--line)}
+  #search input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:var(--text);font-size:.8rem;outline:none}
+  #search input::placeholder{color:var(--muted)}
+  #list{flex:1;overflow-y:auto;padding:8px}
+  #list::-webkit-scrollbar{width:4px}
+  #list::-webkit-scrollbar-track{background:transparent}
+  #list::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px}
+  .card{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:4px}
+  .card:hover{background:var(--panel2)}
+  .card.active{background:var(--panel2);outline:1px solid var(--accent)}
+  .bar{width:4px;height:36px;border-radius:2px;flex-shrink:0}
+  .card-info{flex:1;min-width:0}
+  .card-top{font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-bot{font-size:.72rem;color:var(--muted);margin-top:2px}
+  .num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;color:#fff}
+  #map{flex:1;z-index:1}
+  #toggle{display:none;position:fixed;top:12px;left:12px;z-index:2000;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;color:var(--text);font-size:.8rem;cursor:pointer}
+  @media(max-width:640px){
+    #sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%)}
+    #sidebar.open{transform:translateX(0)}
+    #toggle{display:block}
+  }
 </style>
 </head>
 <body>
-<div id="header">
-  <h1>&#9996; The Hippy Dippy Trail &mdash; London to Bangkok</h1>
-  <div class="sub" id="subtitle">Loading...</div>
-</div>
-<div id="main">
-  <div id="map"></div>
-  <div id="sidebar">
-    <div id="leg-list">
-      <h3>Flight Legs</h3>
-      <div id="cards"></div>
-    </div>
-    <div id="elev-panel">
-      <h4 id="elev-title">Elevation Profile</h4>
-      <div id="elev-chart-wrap"><canvas id="elev-chart"></canvas></div>
-    </div>
+<button id="toggle">☰ Flights</button>
+<div id="wrap">
+<div id="sidebar">
+  <div id="sidebar-head">
+    <h1>&#9996; The Hippy Dippy Trail</h1>
+    <p>London to Bangkok &mdash; Following the Historic Hippie Trail</p>
   </div>
+  <div id="stats">
+    <div class="stat"><strong id="st-flights">0</strong><span>Legs</span></div>
+    <div class="stat"><strong id="st-nm">0</strong><span>Total NM</span></div>
+    <div class="stat"><strong id="st-avg">0</strong><span>Avg Leg</span></div>
+  </div>
+  <div id="search"><input id="q" placeholder="Search ICAO or name…" autocomplete="off"></div>
+  <div id="list"></div>
+</div>
+<div id="map"></div>
 </div>
 <script>
-const PLANS = [{"departure": "EGLC", "destination": "EBBR", "waypoints": [{"icao": "EGLC", "lat": 51.505299, "lon": 0.055278, "type": "Airport"}, {"icao": "WP1", "lat": 51.514011, "lon": 0.719892, "type": "User"}, {"icao": "WP2", "lat": 51.426808, "lon": 1.028267, "type": "User"}, {"icao": "EGDH", "lat": 51.176125, "lon": 1.278014, "type": "Airport"}, {"icao": "WP3", "lat": 51.130108, "lon": 1.321564, "type": "User"}, {"icao": "LFAC", "lat": 50.962101, "lon": 1.95476, "type": "Airport"}, {"icao": "EBMO", "lat": 50.851285, "lon": 3.147669, "type": "Airport"}, {"icao": "EBBR", "lat": 50.901402, "lon": 4.48444, "type": "Airport"}], "distance_nm": 180.8, "leg": 1, "date": "2026-10-10", "filename": "Hippy Dippy Part 01 VFR London City (EGLC) to Brussels National (EBBR).pln"}, {"departure": "EBBR", "destination": "LFPB", "waypoints": [{"icao": "EBBR", "lat": 50.901402, "lon": 4.48444, "type": "Airport"}, {"icao": "EBA4V", "lat": 50.841789, "lon": 4.382036, "type": "Airport"}, {"icao": "WP1", "lat": 50.851278, "lon": 4.353125, "type": "User"}, {"icao": "EBBA", "lat": 50.469514, "lon": 3.838767, "type": "Airport"}, {"icao": "LFFJ5", "lat": 50.124153, "lon": 3.425247, "type": "Airport"}, {"icao": "LFE6V", "lat": 49.857156, "lon": 3.263714, "type": "Airport"}, {"icao": "WP2", "lat": 49.354664, "lon": 2.991225, "type": "User"}, {"icao": "LFQEM", "lat": 49.3858, "lon": 2.788394, "type": "Airport"}, {"icao": "LFZFO", "lat": 49.135425, "lon": 2.597322, "type": "Airport"}, {"icao": "LFPB", "lat": 48.962276, "lon": 2.436539, "type": "Airport"}], "distance_nm": 149.1, "leg": 2, "date": "2026-10-12", "filename": "Hippy Trail Part 02 VFR Brussels National (EBBR) to Le Bourget (LFPB).pln"}, {"departure": "LFPB", "destination": "LFQE", "waypoints": [{"icao": "LFPB", "lat": 48.962276, "lon": 2.436539, "type": "Airport"}, {"icao": "WP1", "lat": 48.856933, "lon": 2.293914, "type": "User"}, {"icao": "WP2", "lat": 48.860378, "lon": 2.338, "type": "User"}, {"icao": "WP3", "lat": 48.852731, "lon": 2.351764, "type": "User"}, {"icao": "LF3UX", "lat": 48.966056, "lon": 2.8878, "type": "Airport"}, {"icao": "WP4", "lat": 49.261333, "lon": 4.028839, "type": "User"}, {"icao": "LFQMY", "lat": 49.225792, "lon": 4.018514, "type": "Airport"}, {"icao": "LFQA", "lat": 49.208698, "lon": 4.15658, "type": "Airport"}, {"icao": "LFSKQ", "lat": 49.204072, "lon": 4.412256, "type": "Airport"}, {"icao": "WP5", "lat": 49.211864, "lon": 5.424392, "type": "User"}, {"icao": "LFQE", "lat": 49.226898, "lon": 5.67222, "type": "Airport"}], "distance_nm": 148.6, "leg": 3, "date": "2026-10-19", "filename": "Hippy Trail Part 03 VFR Le Bourget (LFPB) to Rouvres Army (LFQE).pln"}, {"departure": "LFQE", "destination": "LKCV", "waypoints": [{"icao": "LFQE", "lat": 49.226898, "lon": 5.67222, "type": "Airport"}, {"icao": "WP1", "lat": 48.792164, "lon": 9.232314, "type": "User"}, {"icao": "EDDS", "lat": 48.689878, "lon": 9.221964, "type": "Airport"}, {"icao": "EDDM", "lat": 48.353783, "lon": 11.786086, "type": "Airport"}, {"icao": "LKBL", "lat": 49.431042, "lon": 13.7968, "type": "Airport"}, {"icao": "WP2", "lat": 49.781739, "lon": 14.671931, "type": "User"}, {"icao": "LKCV", "lat": 49.939701, "lon": 15.3818, "type": "Airport"}], "distance_nm": 424.2, "leg": 4, "date": "2026-10-21", "filename": "Hippy Trail Part 04 VFR Rouvres Army (LFQE) to Caslav (LKCV).pln"}, {"departure": "LKCV", "destination": "EPWA", "waypoints": [{"icao": "LKCV", "lat": 49.939701, "lon": 15.3818, "type": "Airport"}, {"icao": "LKSE", "lat": 50.068028, "lon": 15.812006, "type": "Airport"}, {"icao": "WP1", "lat": 50.081536, "lon": 15.810931, "type": "User"}, {"icao": "EPWO", "lat": 50.783344, "lon": 17.161422, "type": "Airport"}, {"icao": "EPLL", "lat": 51.721942, "lon": 19.398056, "type": "Airport"}, {"icao": "EPWA", "lat": 52.165699, "lon": 20.9671, "type": "Airport"}], "distance_nm": 250.8, "leg": 5, "date": "", "filename": "Hippy Trail Part 5 VFR Caslav (LKCV) to Okecie (EPWA).pln"}];
-const ACCENT = '#f6a623';
-const LEG_COLORS = ['#f6a623','#e05c2a','#d4a017','#c8813d','#e8b84b','#f0c060','#cc6633','#e07020','#d4883a','#f0a040'];
+const PLANS = [{"departure": "EGLC", "destination": "EBBR", "waypoints": [{"icao": "WP1", "lat": 51.51401111111111, "lon": 0.7198916666666667}, {"icao": "WP2", "lat": 51.426808333333334, "lon": 1.0282666666666667}, {"icao": "EGDH", "lat": 51.176125, "lon": 1.278014}, {"icao": "WP3", "lat": 51.13010833333333, "lon": 1.321563888888889}, {"icao": "LFAC", "lat": 50.96083333333333, "lon": 1.9513888888888888}, {"icao": "EBMO", "lat": 50.852780555555555, "lon": 3.147222222222222}], "distance_nm": 105.2, "leg": 1, "date": "2026-10-10"}, {"departure": "EBBR", "destination": "LFPB", "waypoints": [{"icao": "EBMO", "lat": 50.852780555555555, "lon": 3.147222222222222}, {"icao": "EBA4V", "lat": 50.84178888888889, "lon": 4.382036111111111}, {"icao": "WP1", "lat": 50.85127777777778, "lon": 4.3531249999999995}, {"icao": "EBBA", "lat": 50.46953333333334, "lon": 3.838763888888889}, {"icao": "LFFJ5", "lat": 50.12415277777778, "lon": 3.425247222222222}, {"icao": "LFE6V", "lat": 49.85715555555556, "lon": 3.263713888888889}, {"icao": "WP2", "lat": 49.35466388888889, "lon": 2.991225}, {"icao": "LFQEM", "lat": 49.385799999999996, "lon": 2.788394444444444}, {"icao": "LFZFO", "lat": 49.135425, "lon": 2.5973222222222225}], "distance_nm": 178.4, "leg": 2, "date": "2026-10-12"}, {"departure": "LFPB", "destination": "LFQE", "waypoints": [{"icao": "LFZFO", "lat": 49.135425, "lon": 2.5973222222222225}, {"icao": "WP1", "lat": 48.85693333333334, "lon": 2.2939138888888886}, {"icao": "WP2", "lat": 48.86037777777778, "lon": 2.338}, {"icao": "WP3", "lat": 48.85273055555556, "lon": 2.3517638888888888}, {"icao": "LF3UX", "lat": 48.966055555555556, "lon": 2.8878}, {"icao": "WP4", "lat": 49.26133333333333, "lon": 4.028838888888889}, {"icao": "LFQMY", "lat": 49.225791666666666, "lon": 4.018513888888889}, {"icao": "LFQA", "lat": 49.20861111111111, "lon": 4.156666666666667}, {"icao": "LFSKQ", "lat": 49.20407222222222, "lon": 4.412255555555556}, {"icao": "WP5", "lat": 49.21186388888889, "lon": 5.424391666666667}], "distance_nm": 150.9, "leg": 3, "date": "2026-10-19"}, {"departure": "LFQE", "destination": "LKCV", "waypoints": [{"icao": "WP5", "lat": 49.21186388888889, "lon": 5.424391666666667}, {"icao": "WP1", "lat": 48.792163888888886, "lon": 9.23231388888889}, {"icao": "EDDS", "lat": 48.689877777777774, "lon": 9.221963888888888}, {"icao": "EDDM", "lat": 48.35378333333333, "lon": 11.78608611111111}, {"icao": "LKBL", "lat": 49.431042, "lon": 13.7968}, {"icao": "WP2", "lat": 49.78173888888889, "lon": 14.671930555555555}], "distance_nm": 404.6, "leg": 4, "date": "2026-10-21"}, {"departure": "LKCV", "destination": "EPWA", "waypoints": [{"icao": "WP2", "lat": 49.78173888888889, "lon": 14.671930555555555}, {"icao": "LKSE", "lat": 50.06802777777778, "lon": 15.812005555555556}, {"icao": "WP1", "lat": 50.08153611111111, "lon": 15.810930555555556}, {"icao": "EPWO", "lat": 50.783344444444445, "lon": 17.16142222222222}, {"icao": "EPLL", "lat": 51.721941666666666, "lon": 19.398055555555555}], "distance_nm": 216.0, "leg": 5, "date": "2026-11-09"}, {"departure": "EPBC", "destination": "EPKA", "waypoints": [{"icao": "EPLL", "lat": 51.721941666666666, "lon": 19.398055555555555}, {"icao": "WP1", "lat": 52.30560555555555, "lon": 20.95458888888889}, {"icao": "WP2", "lat": 52.23929166666667, "lon": 21.04674166666667}, {"icao": "WP3", "lat": 52.211241666666666, "lon": 21.056897222222222}, {"icao": "EP89J", "lat": 52.22489166666667, "lon": 20.99761666666667}, {"icao": "WP4", "lat": 52.16529722222222, "lon": 21.09046111111111}, {"icao": "WP5", "lat": 51.998222222222225, "lon": 21.22546111111111}, {"icao": "WP6", "lat": 51.82808333333334, "lon": 21.359386111111114}, {"icao": "EP5H4", "lat": 50.952488888888894, "lon": 21.36145}, {"icao": "WP7", "lat": 50.71353055555556, "lon": 21.306780555555555}, {"icao": "WP8", "lat": 50.796588888888884, "lon": 20.459216666666666}], "distance_nm": 203.8, "leg": 6, "date": "2026-11-09"}];
+const COLORS = ["#ff4d4d", "#ff9f0a", "#ffd60a", "#30d158", "#64d2ff", "#0a84ff", "#bf5af2", "#ff375f", "#00e5ff", "#aeff00"];
 
-const map = L.map('map',{zoomControl:true}).setView([50,5],5);
+const map = L.map('map',{zoomControl:true,preferCanvas:true});
+
 const tileLayers = {
-  'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'&copy; Esri',maxZoom:19}),
-  'Dark': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',subdomains:'abcd',maxZoom:19}),
-  'Topo': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenTopoMap',maxZoom:17})
+  'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri',maxZoom:19}),
+  'Dark': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© CartoDB',maxZoom:19}),
+  'Street': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}),
 };
 tileLayers['Satellite'].addTo(map);
-L.control.layers(tileLayers,{},{position:'topright'}).addTo(map);
 
-const elevCtx = document.getElementById('elev-chart').getContext('2d');
-let elevChart = new Chart(elevCtx,{type:'line',data:{labels:[],datasets:[{label:'Elevation (ft)',data:[],borderColor:ACCENT,backgroundColor:'rgba(246,166,35,0.15)',borderWidth:1.5,pointRadius:0,fill:true,tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{display:false},y:{ticks:{color:'#9ca3af',font:{size:9}},grid:{color:'#1f2937'}}},plugins:{legend:{display:false}}}});
+// Place labels overlay
+const labelsPane = map.createPane('labels');
+labelsPane.style.zIndex = 250;
+labelsPane.style.pointerEvents = 'none';
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{
+  attribution:'',pane:'labels',maxZoom:19,opacity:0.9
+}).addTo(map);
 
-const cardEls = [];
-const allBounds = [];
+L.control.layers(tileLayers,{},{'position':'topright'}).addTo(map);
 
-function buildCards() {
-  const total = PLANS.reduce((s,p)=>s+p.distance_nm,0);
-  document.getElementById('subtitle').textContent = PLANS.length+' legs · '+total.toFixed(1)+' NM total · '+(total/PLANS.length).toFixed(1)+' NM avg · Little Navmap';
-  const cards = document.getElementById('cards');
-  PLANS.forEach((p,i) => {
-    const c = document.createElement('div');
-    c.className='leg-card';
-    c.innerHTML='<div class="leg-num">Leg '+p.leg+' &middot; '+(p.date||'')+'</div><div class="leg-route">'+p.departure+' &rarr; '+p.destination+'</div><div class="leg-meta">'+p.distance_nm+' NM &middot; '+p.waypoints.length+' waypoints</div>';
-    c.onclick=()=>focusLeg(i);
-    cards.appendChild(c);
-    cardEls.push(c);
+const casingLayer = L.layerGroup().addTo(map);
+const lineLayer   = L.layerGroup().addTo(map);
+const pillLayer   = L.layerGroup().addTo(map);
+const dotLayer    = L.layerGroup().addTo(map);
+const selLayer    = L.layerGroup().addTo(map);
+
+let selected = -1;
+const lineObjs   = [];
+const casingObjs = [];
+const dotObjs    = [];
+const pillObjs   = [];
+
+function midpoint(wps){
+  const n=wps.length; const mi=Math.floor(n/2);
+  return n%2===1?[wps[mi].lat,wps[mi].lon]:[(wps[mi-1].lat+wps[mi].lat)/2,(wps[mi-1].lon+wps[mi].lon)/2];
+}
+
+PLANS.forEach((p,idx)=>{
+  const col = COLORS[idx % COLORS.length];
+  const lls = p.waypoints.map(w=>[w.lat,w.lon]);
+
+  const casing = L.polyline(lls,{color:'#000',weight:4,opacity:.4}).addTo(casingLayer);
+  const line   = L.polyline(lls,{color:col,weight:3,opacity:1}).addTo(lineLayer);
+  casingObjs.push(casing); lineObjs.push(line);
+
+  // Green dep, red arr markers
+  const dIcon = L.divIcon({className:'',html:`<div style="width:10px;height:10px;border-radius:50%;background:#22c55e;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,.6)"></div>`,iconSize:[10,10],iconAnchor:[5,5]});
+  const aIcon = L.divIcon({className:'',html:`<div style="width:10px;height:10px;border-radius:50%;background:#ef4444;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,.6)"></div>`,iconSize:[10,10],iconAnchor:[5,5]});
+  const dDot = L.marker(lls[0],{icon:dIcon}).addTo(dotLayer);
+  const aDot = L.marker(lls[lls.length-1],{icon:aIcon}).addTo(dotLayer);
+  dotObjs.push([dDot,aDot]);
+
+  // Pill number marker at midpoint
+  const mid = midpoint(p.waypoints);
+  const pill = L.marker(mid,{
+    icon: L.divIcon({
+      className:'',
+      html:`<div style="background:${col};color:#000;font-size:10px;font-weight:800;padding:2px 6px;border-radius:10px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.5)">${idx+1}</div>`,
+      iconAnchor:[12,10]
+    })
+  });
+  pillObjs.push(pill);
+
+  [line,casing].forEach(obj=>{
+    obj.on('click',()=>selectFlight(idx));
+  });
+});
+
+map.on('zoomend',()=>{
+  const z = map.getZoom();
+  pillObjs.forEach((pill,i)=>{
+    if(z>=4){
+      if(!pillLayer.hasLayer(pill)) pill.addTo(pillLayer);
+    } else {
+      if(pillLayer.hasLayer(pill)) pillLayer.removeLayer(pill);
+    }
+  });
+});
+
+function selectFlight(idx){
+  selected = idx;
+  lineObjs.forEach((l,i)=>{
+    if(i===idx){
+      l.setStyle({weight:5,opacity:1});
+      casingObjs[i].setStyle({weight:6,opacity:.5});
+    } else {
+      l.setStyle({weight:2,opacity:.35});
+      casingObjs[i].setStyle({weight:3,opacity:.2});
+    }
+  });
+  document.querySelectorAll('.card').forEach((c,i)=>{
+    c.classList.toggle('active',i===idx);
+  });
+  const lls = PLANS[idx].waypoints.map(w=>[w.lat,w.lon]);
+  map.fitBounds(L.latLngBounds(lls),{padding:[40,40]});
+}
+
+function resetStyles(){
+  selected=-1;
+  lineObjs.forEach((l,i)=>{
+    l.setStyle({weight:3,opacity:1});
+    casingObjs[i].setStyle({weight:4,opacity:.4});
+  });
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
+}
+
+map.on('click',e=>{
+  if(e.originalEvent.target.closest && e.originalEvent.target.closest('.leaflet-interactive')) return;
+  resetStyles();
+});
+
+// Sidebar list
+const listEl = document.getElementById('list');
+function buildList(filter=''){
+  listEl.innerHTML='';
+  const fl = filter.toLowerCase();
+  PLANS.forEach((p,idx)=>{
+    const label = p.departure+' → '+p.destination;
+    const sub   = p.date || (p.distance_nm ? p.distance_nm.toFixed(0)+' NM' : '');
+    if(fl && !p.departure.toLowerCase().includes(fl) && !p.destination.toLowerCase().includes(fl) && !(p.date||'').toLowerCase().includes(fl)) return;
+    const col = COLORS[idx % COLORS.length];
+    const d = document.createElement('div');
+    d.className='card';
+    d.innerHTML = '<div class="num">'+p.leg+'</div>'
+      +'<div class="bar" style="background:'+col+'"></div>'
+      +'<div class="card-info"><div class="card-top">'+label+'</div>'
+      +'<div class="card-bot">'+p.departure+' → '+p.destination+(p.date?' · '+p.date:'')+'</div></div>';
+    // allow subclasses to override card HTML via post-processing
+    d.addEventListener('click',()=>selectFlight(idx));
+    listEl.appendChild(d);
   });
 }
+buildList();
 
-function drawRoutes() {
-  PLANS.forEach((p,i) => {
-    const color = LEG_COLORS[i%LEG_COLORS.length];
-    const latlngs = p.waypoints.map(w=>[w.lat,w.lon]);
-    L.polyline(latlngs,{color,weight:2.5,opacity:0.85}).addTo(map);
-    allBounds.push(...latlngs);
-    p.waypoints.forEach((wp,wi) => {
-      const isEnd = wi===0||wi===p.waypoints.length-1;
-      L.circleMarker([wp.lat,wp.lon],{radius:isEnd?7:5,color:isEnd?ACCENT:color,fillColor:isEnd?ACCENT:color,fillOpacity:0.9,weight:2})
-        .bindPopup('<div class="popup-icao">'+wp.icao+'</div><div class="popup-detail">Leg '+p.leg+': '+p.departure+' → '+p.destination+'</div><div class="popup-detail">'+wp.lat.toFixed(4)+', '+wp.lon.toFixed(4)+'</div>')
-        .addTo(map);
-    });
-  });
-  if (allBounds.length) map.fitBounds(L.latLngBounds(allBounds),{padding:[40,40]});
+document.getElementById('q').addEventListener('input',e=>buildList(e.target.value));
+
+// Stats
+const total = PLANS.reduce((s,p)=>s+p.distance_nm,0);
+document.getElementById('st-flights').textContent = PLANS.length;
+document.getElementById('st-nm').textContent = (total/1).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+document.getElementById('st-avg').textContent = (total/PLANS.length).toFixed(0);
+
+// Fit all
+if(PLANS.length){
+  const all = PLANS.flatMap(p=>p.waypoints.map(w=>[w.lat,w.lon]));
+  map.fitBounds(L.latLngBounds(all),{padding:[20,20]});
 }
 
-function focusLeg(idx) {
-  cardEls.forEach((c,i)=>c.classList.toggle('active',i===idx));
-  const p = PLANS[idx];
-  map.fitBounds(L.latLngBounds(p.waypoints.map(w=>[w.lat,w.lon])),{padding:[60,60]});
-  document.getElementById('elev-title').textContent='Elevation — Leg '+p.leg+': '+p.departure+' → '+p.destination;
-  loadElevation(p,idx);
-}
-
-async function loadElevation(plan,idx) {
-  const pts = sampleRoute(plan.waypoints.map(w=>[w.lat,w.lon]),50);
-  try {
-    const res=await fetch('https://api.open-meteo.com/v1/elevation?latitude='+pts.map(p=>p[0].toFixed(4)).join(',')+'&longitude='+pts.map(p=>p[1].toFixed(4)).join(','));
-    const data=await res.json();
-    const elevs=data.elevation.map(e=>Math.round(e*3.28084));
-    const color=LEG_COLORS[idx%LEG_COLORS.length];
-    elevChart.data.labels=elevs.map((_,i)=>i);
-    elevChart.data.datasets[0].data=elevs;
-    elevChart.data.datasets[0].borderColor=color;
-    elevChart.data.datasets[0].backgroundColor=color.replace('rgb','rgba').replace(')',',0.15)')||color+'26';
-    elevChart.update();
-  } catch(e){console.warn('Elevation fetch failed',e);}
-}
-
-function sampleRoute(ll,n){if(ll.length<=n)return ll;const s=(ll.length-1)/(n-1);return Array.from({length:n},(_,i)=>ll[Math.round(i*s)]);}
-
-buildCards();
-drawRoutes();
-focusLeg(0);
+// Mobile toggle
+document.getElementById('toggle').addEventListener('click',()=>{
+  document.getElementById('sidebar').classList.toggle('open');
+});
 </script>
 </body>
 </html>
