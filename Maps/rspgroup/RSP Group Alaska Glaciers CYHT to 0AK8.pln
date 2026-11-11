@@ -1,0 +1,170 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<SimBase.Document>
+    <FlightPlan.FlightPlan>
+        <DepartureID>CYHT</DepartureID>
+        <DestinationID>0AK8</DestinationID>
+        <Title>CYHT - 0AK8</Title>
+        <Descr>Flight from CYHT to 0AK8 created by Little Navmap 3.0.18</Descr>
+        <FPType>VFR</FPType>
+        <CruisingAlt>9500.000</CruisingAlt>
+        <AppVersion>
+            <AppVersionMajor>12</AppVersionMajor>
+            <AppVersionMinor>1</AppVersionMinor>
+            <AppVersionBuild>282174</AppVersionBuild>
+        </AppVersion>
+        <ATCWaypoint id="WP1">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N60° 40' 9.78",W137° 40' 10.57",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP1</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP2">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N60° 37' 31.96",W137° 55' 58.41",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP2</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP3">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N60° 36' 59.64",W138° 12' 55.14",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP3</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP4">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N60° 37' 33.25",W138° 28' 3.38",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP4</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP5">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N60° 45' 48.93",W138° 20' 17.56",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP5</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP6">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N60° 50' 36.09",W138° 24' 49.03",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP6</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP7">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N60° 55' 9.59",W138° 26' 23.57",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP7</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP8">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N60° 58' 37.40",W138° 32' 46.22",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP8</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP9">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 7' 14.78",W138° 41' 50.87",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP9</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP10">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 11' 12.60",W138° 50' 34.48",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP10</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP11">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 16' 13.25",W139° 2' 23.43",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP11</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint>
+            <ATCWaypointType>Airport</ATCWaypointType>
+            <WorldPosition>N61° 22' 14.00",W139° 2' 23.98",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>CYDB</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP12">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 20' 40.93",W139° 10' 38.09",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP12</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP13">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 16' 56.96",W139° 16' 17.56",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP13</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP14">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 18' 12.27",W139° 18' 12.86",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP14</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP15">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 17' 39.82",W139° 24' 45.79",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP15</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP16">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 17' 26.16",W139° 36' 59.46",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP16</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP17">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 20' 11.42",W139° 40' 32.92",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP17</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP18">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 18' 45.49",W139° 53' 35.53",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP18</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP19">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 15' 40.84",W140° 14' 47.48",+009500.00</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP19</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP20">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 22' 40.20",W142° 42' 58.38",+003680.69</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP20</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+        <ATCWaypoint id="WP21">
+            <ATCWaypointType>User</ATCWaypointType>
+            <WorldPosition>N61° 22' 22.09",W142° 54' 14.10",+002332.82</WorldPosition>
+            <ICAO>
+                <ICAOIdent>WP21</ICAOIdent>
+            </ICAO>
+        </ATCWaypoint>
+    </FlightPlan.FlightPlan>
+</SimBase.Document>
